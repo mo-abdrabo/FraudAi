@@ -238,7 +238,7 @@ elif selected == "Real-Time Prediction":
             # Professional Gauge Chart
             fig = go.Figure(go.Indicator(
                 mode = "gauge+number",
-                value = probability * 100,
+                value = probability,
                 domain = {'x': [0, 1], 'y': [0, 1]},
                 title = {'text': "Fraud Risk Score"},
                 gauge = {
@@ -263,3 +263,4 @@ elif selected == "Real-Time Prediction":
             
 
             st.info(f"**Model Confidence:** {probability*100:.2f}%")
+
