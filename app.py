@@ -66,6 +66,20 @@ def load_data():
 def load_model():
     try:
         model = joblib.load(MODEL_PATH)
+        
+       
+        try:
+            if hasattr(model, "estimators_"):
+                for estimator in model.estimators_:
+                    if not hasattr(estimator, "monotonic_cst"):
+                        estimator.monotonic_cst = None
+            
+            if not hasattr(model, "monotonic_cst"):
+                setattr(model, "monotonic_cst", None)
+                
+        except Exception as e:
+            print(f"Patching skipped: {e}")
+
         return model
     except FileNotFoundError:
         st.warning("⚠️ Model file not found. Running in UI Demo Mode.")
@@ -247,4 +261,5 @@ elif selected == "Real-Time Prediction":
             else:
                 st.success(f"✅ **LEGITIMATE**\n\nTransaction appears safe to proceed.")
             
+
             st.info(f"**Model Confidence:** {probability*100:.2f}%")
