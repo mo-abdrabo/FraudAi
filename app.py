@@ -262,5 +262,6 @@ elif selected == "Real-Time Prediction":
                 st.success(f"✅ **LEGITIMATE**\n\nTransaction appears safe to proceed.")
             
 
-            st.info(f"**Model Confidence:** {probability*100:.2f}%")
+            st.info(f"**Model Confidence:** {probability:.2f}%")
+
 
