@@ -4,7 +4,6 @@ import joblib
 import plotly.express as px
 import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
-import xgboost as xgb
 import time
 
 # ------------------------------------------------------
@@ -51,7 +50,7 @@ st.markdown("""
 # ------------------------------------------------------
 # ⚠️ UPDATE THESE PATHS TO YOUR LOCAL FILE LOCATIONS
 DATA_PATH = "Final_fraud_dataset.csv"
-MODEL_PATH = "FraudAI_model.pkl"
+MODEL_PATH = "fraud_model.pkl"
 
 
 @st.cache_data
