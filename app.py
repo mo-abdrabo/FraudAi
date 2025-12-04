@@ -62,32 +62,15 @@ def load_data():
         st.error("❌ Dataset file not found. Please check the path.")
         return pd.DataFrame()
 
-# دالة مساعدة لإصلاح الموديل مهما كان تعقيده
-def patch_model_recursive(model):
-    try:
-        if hasattr(model, "steps"):
-            for _, step in model.steps:
-                patch_model_recursive(step)
-        
-        elif hasattr(model, "estimators_"):
-            for estimator in model.estimators_:
-                patch_model_recursive(estimator)
-                
-        else:
-            if not hasattr(model, "monotonic_cst"):
-                setattr(model, "monotonic_cst", None)
-    except Exception as e:
-        pass 
-
 @st.cache_resource
 def load_model():
     try:
         model = joblib.load(MODEL_PATH)
-        patch_model_recursive(model)
         return model
     except FileNotFoundError:
         st.warning("⚠️ Model file not found. Running in UI Demo Mode.")
         return None
+
 df = load_data()
 model = load_model()
 
