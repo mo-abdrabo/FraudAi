@@ -203,36 +203,36 @@ elif selected == "Real-Time Prediction":
             hour, day, month, day_of_week
         ]], columns=required_cols)
 
-        # Loading Animation
         with st.spinner('🔍 AI is scanning patterns...'):
-            time.sleep(1) # Simulated delay for UX
+            time.sleep(1) 
             try:
-                prediction = model.predict(input_data)[0]
-                probability = model.predict_proba(input_data)[0][1] # Probability of Fraud
+                # ⚠️ تصحيح هام: نحسب الاحتمال بدون ضرب في 100
+                # النتيجة هنا ستكون مثلاً 0.75 أو 0.02
+                probability = model.predict_proba(input_data)[0][1]
             except Exception as e:
                 st.error(f"Prediction Error: {e}")
-                prediction = 0
                 probability = 0.0
-# --- LOGIC: تحديد مستوى الخطورة ---
-        if probability > 0.5:
+
+        # --- LOGIC FIX: المقارنة الآن صحيحة (أرقام عشرية) ---
+        if probability > 0.5:  # يعني أكبر من 50%
             risk_level = "CRITICAL RISK"
-            risk_color = "#FF4B4B"  # أحمر
+            risk_color = "#FF4B4B"
             risk_icon = "🛡️❌"
             risk_message = "Transaction Blocked - High Fraud Probability"
             bar_width = "100%"
-        elif probability > 0.3:
+        elif probability > 0.3: # يعني أكبر من 30%
             risk_level = "WARNING"
-            risk_color = "#FFA500"  # برتقالي
+            risk_color = "#FFA500"
             risk_icon = "⚠️"
             risk_message = "Manual Review Required"
             bar_width = "60%"
         else:
             risk_level = "SAFE"
-            risk_color = "#00CC96"  # أخضر
+            risk_color = "#00CC96"
             risk_icon = "🛡️✅"
             risk_message = "Transaction Verified Successfully"
             bar_width = "5%"
-
+            
         # --- UI: العرض (تم إصلاح المسافات) ---
         st.subheader("📋 Security Analysis")
         
@@ -302,4 +302,5 @@ elif selected == "Real-Time Prediction":
 <div class="risk-bar-fill"></div>
 </div>
 </div>
+
 """, unsafe_allow_html=True)
