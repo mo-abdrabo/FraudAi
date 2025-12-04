@@ -66,20 +66,6 @@ def load_data():
 def load_model():
     try:
         model = joblib.load(MODEL_PATH)
-        
-       
-        try:
-            if hasattr(model, "estimators_"):
-                for estimator in model.estimators_:
-                    if not hasattr(estimator, "monotonic_cst"):
-                        estimator.monotonic_cst = None
-            
-            if not hasattr(model, "monotonic_cst"):
-                setattr(model, "monotonic_cst", None)
-                
-        except Exception as e:
-            print(f"Patching skipped: {e}")
-
         return model
     except FileNotFoundError:
         st.warning("⚠️ Model file not found. Running in UI Demo Mode.")
@@ -93,7 +79,6 @@ model = load_model()
 # ------------------------------------------------------
 with st.sidebar:
     # --- LOGO AREA ---
-    # Replace URL with a local image path if needed
     st.image("https://cdn-icons-png.flaticon.com/512/2040/2040520.png", width=90) 
     st.markdown("## **FraudGuard AI**")
     st.caption("Advanced Security System")
@@ -228,40 +213,93 @@ elif selected == "Real-Time Prediction":
                 st.error(f"Prediction Error: {e}")
                 prediction = 0
                 probability = 0.0
+# --- LOGIC: تحديد مستوى الخطورة ---
+        if probability > 0.5:
+            risk_level = "CRITICAL RISK"
+            risk_color = "#FF4B4B"  # أحمر
+            risk_icon = "🛡️❌"
+            risk_message = "Transaction Blocked - High Fraud Probability"
+            bar_width = "100%"
+        elif probability > 0.3:
+            risk_level = "WARNING"
+            risk_color = "#FFA500"  # برتقالي
+            risk_icon = "⚠️"
+            risk_message = "Manual Review Required"
+            bar_width = "60%"
+        else:
+            risk_level = "SAFE"
+            risk_color = "#00CC96"  # أخضر
+            risk_icon = "🛡️✅"
+            risk_message = "Transaction Verified Successfully"
+            bar_width = "5%"
 
-        # --- RESULTS DISPLAY ---
-        st.subheader("📋 Analysis Results")
+        # --- UI: العرض (تم إصلاح المسافات) ---
+        st.subheader("📋 Security Analysis")
         
-        col_res1, col_res2 = st.columns([1, 1])
-        
-        with col_res1:
-            # Professional Gauge Chart
-            fig = go.Figure(go.Indicator(
-                mode = "gauge+number",
-                value = probability,
-                domain = {'x': [0, 1], 'y': [0, 1]},
-                title = {'text': "Fraud Risk Score"},
-                gauge = {
-                    'axis': {'range': [None, 100]},
-                    'bar': {'color': "#FF4B4B" if probability > 0.5 else "#00CC96"},
-                    'steps': [
-                        {'range': [0, 40], 'color': "#f8f9fa"},
-                        {'range': [40, 70], 'color': "#e9ecef"},
-                        {'range': [70, 100], 'color': "#dee2e6"}],
-                    'threshold': {
-                        'line': {'color': "red", 'width': 4},
-                        'thickness': 0.75,
-                        'value': 90}}))
-            st.plotly_chart(fig, use_container_width=True)
+        st.markdown(f"""
+<style>
+.security-card {{
+    background-color: white;
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    border-top: 8px solid {risk_color};
+    font-family: sans-serif;
+}}
+.risk-label {{
+    color: #888;
+    font-size: 14px;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+    font-weight: bold;
+    margin-bottom: 10px;
+}}
+.main-status {{
+    color: {risk_color};
+    font-size: 36px;
+    font-weight: 900;
+    margin: 15px 0;
+}}
+.icon-display {{
+    font-size: 70px;
+}}
+.risk-bar-bg {{
+    background-color: #f0f0f0;
+    border-radius: 10px;
+    height: 12px;
+    width: 100%;
+    margin-top: 20px;
+    overflow: hidden;
+}}
+.risk-bar-fill {{
+    background-color: {risk_color};
+    height: 100%;
+    width: {bar_width};
+    transition: width 1s ease-in-out;
+}}
+.labels-row {{
+    display: flex; 
+    justify-content: space-between; 
+    font-size: 12px; 
+    color: #999; 
+    margin-top: 25px;
+}}
+</style>
 
-        with col_res2:
-            st.markdown("### Decision Recommendation:")
-            if prediction == 1:
-                st.error(f"🚨 **FRAUD DETECTED**\n\nHigh risk transaction detected. Immediate verification recommended.")
-            else:
-                st.success(f"✅ **LEGITIMATE**\n\nTransaction appears safe to proceed.")
-            
+<div class="security-card">
+<div class="risk-label">Analysis Result</div>
+<div class="icon-display">{risk_icon}</div>
+<div class="main-status">{risk_level}</div>
+<p style="color: #555; font-size: 18px;">{risk_message}</p>
 
-            st.info(f"**Model Confidence:** {probability:.2f}%")
-
-
+<div class="labels-row">
+<span>Safe</span>
+<span>Suspicious</span>
+<span>Dangerous</span>
+</div>
+<div class="risk-bar-bg">
+<div class="risk-bar-fill"></div>
+</div>
+</div>
+""", unsafe_allow_html=True)
