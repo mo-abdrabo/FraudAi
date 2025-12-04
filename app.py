@@ -52,7 +52,6 @@ st.markdown("""
 DATA_PATH = "Final_fraud_dataset.csv"
 MODEL_PATH = "fraud_model.pkl"
 
-
 @st.cache_data
 def load_data():
     try:
@@ -62,10 +61,32 @@ def load_data():
         st.error("❌ Dataset file not found. Please check the path.")
         return pd.DataFrame()
 
+# دالة ذكية لإصلاح الموديل مهما كان نوعه (تعالج مشكلة monotonic_cst)
+def patch_model_recursive(model):
+    try:
+        # لو الموديل عبارة عن Random Forest أو يحتوي على عدة أشجار
+        if hasattr(model, "estimators_"):
+            for estimator in model.estimators_:
+                patch_model_recursive(estimator)
+        
+        # لو الموديل عبارة عن Pipeline
+        elif hasattr(model, "steps"):
+            for _, step in model.steps:
+                patch_model_recursive(step)
+                
+        # الوصول للشجرة نفسها وتطبيق الإصلاح
+        else:
+            if not hasattr(model, "monotonic_cst"):
+                setattr(model, "monotonic_cst", None)
+    except Exception:
+        pass
+
 @st.cache_resource
 def load_model():
     try:
         model = joblib.load(MODEL_PATH)
+        # تطبيق الإصلاح فوراً بعد التحميل
+        patch_model_recursive(model)
         return model
     except FileNotFoundError:
         st.warning("⚠️ Model file not found. Running in UI Demo Mode.")
@@ -304,3 +325,4 @@ elif selected == "Real-Time Prediction":
 </div>
 
 """, unsafe_allow_html=True)
+
