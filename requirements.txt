@@ -4,7 +4,7 @@ joblib
 plotly
 streamlit-option-menu
 scikit-learn
-xgboost
 imbalanced-learn
 
 category_encoders
+
