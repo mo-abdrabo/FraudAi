@@ -5,6 +5,7 @@ import plotly.express as px
 import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 import time
+import os
 
 # ------------------------------------------------------
 # 🔧 PAGE CONFIGURATION
@@ -17,7 +18,7 @@ st.set_page_config(
 )
 
 # ------------------------------------------------------
-# 🎨 CUSTOM CSS & STYLING (Professional Theme)
+# 🎨 CUSTOM CSS & STYLING
 # ------------------------------------------------------
 st.markdown("""
     <style>
@@ -46,9 +47,8 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------
-# 📂 DATA & MODEL LOADING (Cached for Speed)
+# 📂 DATA & MODEL LOADING
 # ------------------------------------------------------
-# ⚠️ UPDATE THESE PATHS TO YOUR LOCAL FILE LOCATIONS
 DATA_PATH = "Final_fraud_dataset.csv"
 MODEL_PATH = "fraud_model.pkl"
 
@@ -92,6 +92,7 @@ def load_model():
         st.warning("⚠️ Model file not found. Running in UI Demo Mode.")
         return None
 
+# 🔥 تحميل البيانات والموديل هنا لضمان عمل البرنامج بشكل صحيح
 df = load_data()
 model = load_model()
 
@@ -100,7 +101,12 @@ model = load_model()
 # ------------------------------------------------------
 with st.sidebar:
     # --- LOGO AREA ---
-    st.image("https://cdn-icons-png.flaticon.com/512/2040/2040520.png", width=90) 
+    # محاولة تحميل اللوجو المحلي، وإذا لم يوجد يستخدم رابط احتياطي
+    if os.path.exists("logo.png"):
+        st.image("logo.png", width=100)
+    else:
+        st.markdown("# 🛡️") # أيقونة بديلة
+        
     st.markdown("## **FraudGuard AI**")
     st.caption("Advanced Security System")
     st.markdown("---")
@@ -227,21 +233,22 @@ elif selected == "Real-Time Prediction":
         with st.spinner('🔍 AI is scanning patterns...'):
             time.sleep(1) 
             try:
-                # ⚠️ تصحيح هام: نحسب الاحتمال بدون ضرب في 100
-                # النتيجة هنا ستكون مثلاً 0.75 أو 0.02
+                # حساب الاحتمال (0.0 إلى 1.0)
                 probability = model.predict_proba(input_data)[0][1]
             except Exception as e:
                 st.error(f"Prediction Error: {e}")
                 probability = 0.0
 
-        # --- LOGIC FIX: المقارنة الآن صحيحة (أرقام عشرية) ---
-        if probability > 0.5:  # يعني أكبر من 50%
+        # --- LOGIC & UI DISPLAY ---
+        
+        # تحديد مستوى الخطورة
+        if probability > 0.5:  # أكثر من 50%
             risk_level = "CRITICAL RISK"
             risk_color = "#FF4B4B"
             risk_icon = "🛡️❌"
             risk_message = "Transaction Blocked - High Fraud Probability"
             bar_width = "100%"
-        elif probability > 0.3: # يعني أكبر من 30%
+        elif probability > 0.3: # أكثر من 30%
             risk_level = "WARNING"
             risk_color = "#FFA500"
             risk_icon = "⚠️"
@@ -254,9 +261,9 @@ elif selected == "Real-Time Prediction":
             risk_message = "Transaction Verified Successfully"
             bar_width = "5%"
             
-        # --- UI: العرض (تم إصلاح المسافات) ---
         st.subheader("📋 Security Analysis")
         
+        # عرض بطاقة النتيجة (HTML/CSS)
         st.markdown(f"""
 <style>
 .security-card {{
@@ -323,6 +330,4 @@ elif selected == "Real-Time Prediction":
 <div class="risk-bar-fill"></div>
 </div>
 </div>
-
 """, unsafe_allow_html=True)
-
