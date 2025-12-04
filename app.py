@@ -62,7 +62,6 @@ def load_data():
         st.error("❌ Dataset file not found. Please check the path.")
         return pd.DataFrame()
 
-@st.cache_resource
 def load_model():
     try:
         model = joblib.load(MODEL_PATH)
@@ -302,4 +301,5 @@ elif selected == "Real-Time Prediction":
 <div class="risk-bar-fill"></div>
 </div>
 </div>
+
 """, unsafe_allow_html=True)
