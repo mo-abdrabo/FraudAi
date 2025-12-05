@@ -50,7 +50,7 @@ st.markdown("""
 # ------------------------------------------------------
 # ✅ تصحيح: تم تعديل اسم الملف ليطابق الموجود في GitHub الخاص بك
 DATA_PATH = "Final_fraud_dataset.csv"
-MODEL_PATH = "Fraud_model.pkl" 
+MODEL_PATH = "fraud_model.pkl" 
 
 @st.cache_data
 def load_data():
@@ -313,3 +313,4 @@ elif selected == "Real-Time Prediction":
 </div>
 </div>
 """, unsafe_allow_html=True)
+
