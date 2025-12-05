@@ -2,13 +2,9 @@ import streamlit as st
 import pandas as pd
 import joblib
 import plotly.express as px
-import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 import time
 
-# ------------------------------------------------------
-# 🔧 PAGE CONFIGURATION
-# ------------------------------------------------------
 st.set_page_config(
     page_title="FraudGuard AI | Detection System",
     page_icon="🛡️",
@@ -16,9 +12,6 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ------------------------------------------------------
-# 🎨 CUSTOM CSS & STYLING
-# ------------------------------------------------------
 st.markdown("""
     <style>
         .block-container {padding-top: 1rem; padding-bottom: 5rem;}
@@ -45,10 +38,6 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# ------------------------------------------------------
-# 📂 DATA & MODEL LOADING
-# ------------------------------------------------------
-# ✅ تصحيح: تم تعديل اسم الملف ليطابق الموجود في GitHub الخاص بك
 DATA_PATH = "Final_fraud_dataset.csv"
 MODEL_PATH = "FraudAI_model.pkl" 
 
@@ -69,15 +58,11 @@ def load_model():
     except FileNotFoundError:
         st.warning("⚠️ Model file not found. Running in UI Demo Mode.")
         return None
-# تحميل البيانات والموديل
+
 df = load_data()
 model = load_model()
 
-# ------------------------------------------------------
-# 🛡️ SIDEBAR & NAVIGATION
-# ------------------------------------------------------
 with st.sidebar:
-    # تم استخدام أيقونة نصية بدلاً من الصورة لتجنب المشاكل
     st.markdown("<h1 style='text-align: center; font-size: 60px;'>🛡️</h1>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'>FraudGuard AI</h2>", unsafe_allow_html=True)
     st.markdown("---")
@@ -98,9 +83,6 @@ with st.sidebar:
     st.markdown("---")
     st.info("System Status: **Online** 🟢")
 
-# ------------------------------------------------------
-# 🏠 1. DASHBOARD VIEW
-# ------------------------------------------------------
 if selected == "Dashboard":
     st.title("📊 Historical Data Overview")
     st.markdown("Insights derived from historical transaction records.")
@@ -122,57 +104,80 @@ if selected == "Dashboard":
         c1, c2 = st.columns(2)
         with c1:
             st.subheader("Transactions by Device")
-            fig_device = px.pie(df, names='device_type', title="Device Distribution", hole=0.5, color_discrete_sequence=px.colors.sequential.RdBu)
-            st.plotly_chart(fig_device, use_container_width=True)
+            if 'device_type' in df.columns:
+                fig_device = px.pie(df, names='device_type', title="Device Distribution", hole=0.5, color_discrete_sequence=px.colors.sequential.RdBu)
+                st.plotly_chart(fig_device, use_container_width=True)
         
         with c2:
             st.subheader("Amount Distribution")
             fig_hist = px.histogram(df, x="transaction_amount", nbins=50, title="Transaction Amounts", color_discrete_sequence=['#007BFF'])
             st.plotly_chart(fig_hist, use_container_width=True)
 
-# ------------------------------------------------------
-# 🔍 2. REAL-TIME PREDICTION
-# ------------------------------------------------------
 elif selected == "Real-Time Prediction":
     st.title("🛡️ Transaction Scanner")
     st.markdown("Enter transaction details below to estimate fraud probability.")
 
-    def get_col(name):
-        for col in df.columns:
-            if name.lower() in col.lower(): return col
-        return name
+    transaction_map = {'ATM Withdrawal': 0, 'Bank Transfer': 1, 'Online': 2, 'POS': 3}
+    device_map = {'Laptop': 0, 'Mobile': 1, 'Tablet': 2}
+    location_map = {'London': 0, 'Mumbai': 1, 'New York': 2, 'Sydney': 3, 'Tokyo': 4}
 
-    # --- INPUT FORM ---
+    def get_auto_mapping(col_name):
+        if col_name in df.columns:
+            unique_vals = sorted(df[col_name].astype(str).unique())
+            return {val: i for i, val in enumerate(unique_vals)}
+        return {}
+
+    merchant_map = get_auto_mapping("merchant_category")
+    card_map = get_auto_mapping("card_type")
+    auth_map = get_auto_mapping("authentication_method")
+
     with st.container():
         st.subheader("Transaction Details")
         
         c1, c2, c3 = st.columns(3)
         
         with c1:
-            transaction_amount = st.number_input(" Amount ($)", min_value=0.0, step=10.0, value=100.0)
-            transaction_type = st.selectbox("Type", df[get_col("transaction_type")].unique())
-            account_balance = st.number_input(" Account Balance", min_value=0.0, value=5000.0)
-            device_type = st.selectbox(" Device", df[get_col("device_type")].unique())
-            location = st.selectbox(" Location", df[get_col("location")].unique())
-            merchant_category = st.selectbox(" Merchant", df[get_col("merchant_category")].unique())
+            transaction_amount = st.number_input("Amount ($)", min_value=0.0, step=10.0, value=100.0)
+            
+            t_type_label = st.selectbox("Type", options=list(transaction_map.keys()))
+            transaction_type_val = transaction_map[t_type_label]
+
+            account_balance = st.number_input("Account Balance", min_value=0.0, value=5000.0)
+            
+            dev_label = st.selectbox("Device", options=list(device_map.keys()))
+            device_type_val = device_map[dev_label]
+            
+            loc_label = st.selectbox("Location", options=list(location_map.keys()))
+            location_val = location_map[loc_label]
+            
+            merch_label = st.selectbox("Merchant", options=list(merchant_map.keys()))
+            merchant_val = merchant_map[merch_label]
 
         with c2:
-            daily_transaction_count = st.number_input(" Daily Count", min_value=0, value=1)
-            avg_transaction_amount_7d = st.number_input(" Avg Amount (7d)", min_value=0.0, value=50.0)
-            failed_transaction_count_7d = st.number_input(" Failed Count (7d)", min_value=0)
-            card_type = st.selectbox(" Card Type", df[get_col("card_type")].unique())
-            card_age = st.number_input(" Card Age (Days)", min_value=0, value=365)
-            transaction_distance = st.number_input(" Distance (km)", min_value=0.0)
+            daily_transaction_count = st.number_input("Daily Count", min_value=0, value=1)
+            avg_transaction_amount_7d = st.number_input("Avg Amount (7d)", min_value=0.0, value=50.0)
+            failed_transaction_count_7d = st.number_input("Failed Count (7d)", min_value=0)
+            
+            card_label = st.selectbox("Card Type", options=list(card_map.keys()))
+            card_type_val = card_map[card_label]
+            
+            card_age = st.number_input("Card Age (Days)", min_value=0, value=365)
+            transaction_distance = st.number_input("Distance (km)", min_value=0.0)
 
         with c3:
-            authentication_method = st.selectbox("Auth Method", df[get_col("authentication_method")].unique())
-            is_weekend = st.selectbox(" Is Weekend?", df[get_col("is_weekend")].unique())
-            hour = st.slider("Hour of Day", 0, 23, 12)
-            day = st.selectbox("Day", df[get_col("day")].unique())
-            month = st.selectbox("Month", df[get_col("month")].unique())
-            day_of_week = st.selectbox("Weekday", df[get_col("day_of_week")].unique())
+            auth_label = st.selectbox("Auth Method", options=list(auth_map.keys()))
+            auth_method_val = auth_map[auth_label]
 
-    # --- PREDICTION LOGIC ---
+            is_weekend_val = st.selectbox("Is Weekend?", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
+            
+            hour = st.slider("Hour of Day", 0, 23, 12)
+            day = st.selectbox("Day", range(1, 32))
+            month = st.selectbox("Month", range(1, 13))
+            
+            days_map = {0: "Mon", 1: "Tue", 2: "Wed", 3: "Thu", 4: "Fri", 5: "Sat", 6: "Sun"}
+            day_of_week_label = st.selectbox("Weekday", options=list(days_map.values()))
+            day_of_week_val = [k for k, v in days_map.items() if v == day_of_week_label][0]
+
     st.markdown("---")
     center_col1, center_col2, center_col3 = st.columns([1, 2, 1])
     
@@ -180,33 +185,41 @@ elif selected == "Real-Time Prediction":
         predict_btn = st.button("🚀 Analyze Transaction", use_container_width=True)
 
     if predict_btn and model:
-        required_cols = [
+        input_data = pd.DataFrame([[
+            transaction_amount, 
+            transaction_type_val, 
+            account_balance, 
+            device_type_val,
+            location_val, 
+            merchant_val, 
+            daily_transaction_count,
+            avg_transaction_amount_7d, 
+            failed_transaction_count_7d, 
+            card_type_val,
+            card_age, 
+            transaction_distance, 
+            auth_method_val, 
+            is_weekend_val,
+            hour, 
+            day, 
+            month, 
+            day_of_week_val
+        ]], columns=[
             "transaction_amount", "transaction_type", "account_balance", "device_type",
             "location", "merchant_category", "daily_transaction_count",
             "avg_transaction_amount_7d", "failed_transaction_count_7d", "card_type",
             "card_age", "transaction_distance", "authentication_method", "is_weekend",
             "hour", "day", "month", "day_of_week"
-        ]
-        
-        input_data = pd.DataFrame([[
-            transaction_amount, transaction_type, account_balance, device_type,
-            location, merchant_category, daily_transaction_count,
-            avg_transaction_amount_7d, failed_transaction_count_7d, card_type,
-            card_age, transaction_distance, authentication_method, is_weekend,
-            hour, day, month, day_of_week
-        ]], columns=required_cols)
+        ])
 
         with st.spinner('🔍 AI is scanning patterns...'):
             time.sleep(1) 
             try:
-                # ✅ تصحيح: الحساب الخام بدون ضرب في 100
                 probability = model.predict_proba(input_data)[0][1]
             except Exception as e:
                 st.error(f"Prediction Error: {e}")
                 probability = 0.0
 
-        # --- LOGIC & UI (تم إزالة المسافات البادئة تماماً لإصلاح المربع الرمادي) ---
-        
         if probability > 0.5:
             risk_level = "CRITICAL RISK"
             risk_color = "#FF4B4B"
@@ -228,7 +241,6 @@ elif selected == "Real-Time Prediction":
             
         st.subheader("📋 Security Analysis")
         
-        # ✅ هذا الجزء هو الأهم: HTML يبدأ من أول السطر (بدون مسافات)
         st.markdown(f"""
 <style>
 .security-card {{
@@ -296,6 +308,3 @@ elif selected == "Real-Time Prediction":
 </div>
 </div>
 """, unsafe_allow_html=True)
-
-
-
