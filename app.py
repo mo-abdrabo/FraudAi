@@ -5,7 +5,6 @@ import plotly.express as px
 import plotly.graph_objects as go
 from streamlit_option_menu import option_menu
 import time
-import os
 
 # ------------------------------------------------------
 # 🔧 PAGE CONFIGURATION
@@ -36,36 +35,33 @@ st.markdown("""
         .stButton>button:hover {
             background-color: #0056b3;
         }
+        .metric-card {
+            background-color: #F0F2F6;
+            border-left: 5px solid #007BFF;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 10px;
+        }
     </style>
 """, unsafe_allow_html=True)
 
 # ------------------------------------------------------
 # 📂 DATA & MODEL LOADING
 # ------------------------------------------------------
+# ✅ تصحيح: تم تعديل اسم الملف ليطابق الموجود في GitHub الخاص بك
 DATA_PATH = "Final_fraud_dataset.csv"
-MODEL_PATH = "fraud_model.pkl" # تأكد أن هذا هو اسم الموديل الذي حفظته من النوت بوك
+MODEL_PATH = "Fraud_model.pkl" 
 
 @st.cache_data
 def load_data():
     try:
         df = pd.read_csv(DATA_PATH)
-        # تطبيق نفس تنظيف الأسماء الذي تم في النوت بوك
-        df.columns = df.columns.str.strip().str.lower().str.replace(" ", "_")
-        
-        # تحويل الوقت لاستخراج الخصائص للعرض في الداشبورد
-        if 'timestamp' in df.columns:
-            df['timestamp'] = pd.to_datetime(df['timestamp'])
-            df['hour'] = df['timestamp'].dt.hour
-            df['day'] = df['timestamp'].dt.day
-            df['month'] = df['timestamp'].dt.month
-            df['day_of_week'] = df['timestamp'].dt.dayofweek
-            
         return df
     except FileNotFoundError:
-        st.error("❌ Dataset file not found. Please check the path.")
+        st.error(f"❌ Dataset file not found. Please make sure '{DATA_PATH}' exists.")
         return pd.DataFrame()
 
-# دالة إصلاح الموديل (لضمان التوافق مع النسخ المختلفة)
+# ✅ دالة الإصلاح الشاملة للموديل (لحل مشكلة monotonic_cst)
 def patch_model_recursive(model):
     try:
         if hasattr(model, "estimators_"):
@@ -84,12 +80,13 @@ def patch_model_recursive(model):
 def load_model():
     try:
         model = joblib.load(MODEL_PATH)
-        patch_model_recursive(model)
+        patch_model_recursive(model) # تطبيق الإصلاح
         return model
     except FileNotFoundError:
-        st.warning("⚠️ Model file not found. Running in UI Demo Mode.")
+        st.warning(f"⚠️ Model file '{MODEL_PATH}' not found. Please check filename on GitHub.")
         return None
 
+# تحميل البيانات والموديل
 df = load_data()
 model = load_model()
 
@@ -97,10 +94,9 @@ model = load_model()
 # 🛡️ SIDEBAR & NAVIGATION
 # ------------------------------------------------------
 with st.sidebar:
-    # استخدام أيقونة نصية بدلاً من الصورة لتجنب مشاكل المسارات
+    # تم استخدام أيقونة نصية بدلاً من الصورة لتجنب المشاكل
     st.markdown("<h1 style='text-align: center; font-size: 60px;'>🛡️</h1>", unsafe_allow_html=True)
-    st.markdown("## **FraudGuard AI**")
-    st.caption("Advanced Security System")
+    st.markdown("<h2 style='text-align: center;'>FraudGuard AI</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
     selected = option_menu(
@@ -127,27 +123,24 @@ if selected == "Dashboard":
     st.markdown("Insights derived from historical transaction records.")
     
     if not df.empty:
-        # Metrics
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Total Transactions", f"{len(df):,}")
         col2.metric("Avg Amount", f"${df['transaction_amount'].mean():.2f}")
         col3.metric("Merchants", df['merchant_category'].nunique())
         
-        if 'fraud_label' in df.columns:
-            fraud_count = df['fraud_label'].value_counts().get(1, 0)
+        target_col = [c for c in df.columns if 'fraud' in c.lower() or 'target' in c.lower() or 'class' in c.lower()]
+        if target_col:
+            fraud_count = df[target_col[0]].value_counts().get(1, 0)
             col4.metric("Fraud Cases", f"{fraud_count}")
         else:
             col4.metric("Fraud Cases", "N/A")
 
         st.markdown("---")
-        
-        # Charts
         c1, c2 = st.columns(2)
         with c1:
             st.subheader("Transactions by Device")
-            if 'device_type' in df.columns:
-                fig_device = px.pie(df, names='device_type', title="Device Distribution", hole=0.5, color_discrete_sequence=px.colors.sequential.RdBu)
-                st.plotly_chart(fig_device, use_container_width=True)
+            fig_device = px.pie(df, names='device_type', title="Device Distribution", hole=0.5, color_discrete_sequence=px.colors.sequential.RdBu)
+            st.plotly_chart(fig_device, use_container_width=True)
         
         with c2:
             st.subheader("Amount Distribution")
@@ -161,72 +154,40 @@ elif selected == "Real-Time Prediction":
     st.title("🛡️ Transaction Scanner")
     st.markdown("Enter transaction details below to estimate fraud probability.")
 
-    # دالة مساعدة لتحويل النصوص إلى أرقام (Label Encoding Simulation)
-    # هذا ضروري لأن الموديل تدرب على أرقام (0, 1, 2...) وليس نصوص
-    def encode_input(column_name, user_selection):
-        if column_name in df.columns:
-            # الحصول على القيم الفريدة وترتيبها أبجدياً (كما يفعل LabelEncoder)
-            unique_values = sorted(df[column_name].unique())
-            # إرجاع الـ index المقابل للقيمة المختارة
-            try:
-                return unique_values.index(user_selection)
-            except ValueError:
-                return 0
-        return 0
+    def get_col(name):
+        for col in df.columns:
+            if name.lower() in col.lower(): return col
+        return name
 
     # --- INPUT FORM ---
     with st.container():
         st.subheader("Transaction Details")
         
-        # تقسيم المدخلات لثلاثة أعمدة
         c1, c2, c3 = st.columns(3)
         
         with c1:
-            # المدخلات الرقمية المباشرة
-            transaction_amount = st.number_input("Transaction Amount ($)", min_value=0.0, value=100.0)
-            account_balance = st.number_input("Account Balance ($)", min_value=0.0, value=5000.0)
-            
-            # المدخلات الفئوية (نصوص)
-            # نستخدم القيم الأصلية من الداتا فريم قبل التشفير للعرض في القائمة
-            tx_types = sorted(df['transaction_type'].unique()) if 'transaction_type' in df.columns else ['POS', 'Online']
-            transaction_type_str = st.selectbox("Transaction Type", tx_types)
-            
-            devices = sorted(df['device_type'].unique()) if 'device_type' in df.columns else ['Mobile', 'Desktop']
-            device_type_str = st.selectbox("Device Type", devices)
-
-            locations = sorted(df['location'].unique()) if 'location' in df.columns else ['City A', 'City B']
-            location_str = st.selectbox("Location", locations)
-            
-            merchants = sorted(df['merchant_category'].unique()) if 'merchant_category' in df.columns else ['Retail', 'Travel']
-            merchant_category_str = st.selectbox("Merchant Category", merchants)
+            transaction_amount = st.number_input(" Amount ($)", min_value=0.0, step=10.0, value=100.0)
+            transaction_type = st.selectbox("Type", df[get_col("transaction_type")].unique())
+            account_balance = st.number_input(" Account Balance", min_value=0.0, value=5000.0)
+            device_type = st.selectbox(" Device", df[get_col("device_type")].unique())
+            location = st.selectbox(" Location", df[get_col("location")].unique())
+            merchant_category = st.selectbox(" Merchant", df[get_col("merchant_category")].unique())
 
         with c2:
-            daily_transaction_count = st.number_input("Daily Transaction Count", min_value=0, value=1)
-            avg_transaction_amount_7d = st.number_input("Avg Amount (Last 7 Days)", min_value=0.0, value=50.0)
-            failed_transaction_count_7d = st.number_input("Failed Counts (Last 7 Days)", min_value=0)
-            
-            card_types = sorted(df['card_type'].unique()) if 'card_type' in df.columns else ['Visa', 'MasterCard']
-            card_type_str = st.selectbox("Card Type", card_types)
-            
-            card_age = st.number_input("Card Age (Days)", min_value=0, value=365)
-            transaction_distance = st.number_input("Distance from Home (km)", min_value=0.0, value=10.0)
+            daily_transaction_count = st.number_input(" Daily Count", min_value=0, value=1)
+            avg_transaction_amount_7d = st.number_input(" Avg Amount (7d)", min_value=0.0, value=50.0)
+            failed_transaction_count_7d = st.number_input(" Failed Count (7d)", min_value=0)
+            card_type = st.selectbox(" Card Type", df[get_col("card_type")].unique())
+            card_age = st.number_input(" Card Age (Days)", min_value=0, value=365)
+            transaction_distance = st.number_input(" Distance (km)", min_value=0.0)
 
         with c3:
-            auth_methods = sorted(df['authentication_method'].unique()) if 'authentication_method' in df.columns else ['PIN', 'Biometric']
-            authentication_method_str = st.selectbox("Auth Method", auth_methods)
-            
-            is_weekend_val = st.selectbox("Is Weekend?", ["No", "Yes"])
-            is_weekend = 1 if is_weekend_val == "Yes" else 0
-            
-            # ميزات الوقت المستخرجة
+            authentication_method = st.selectbox("Auth Method", df[get_col("authentication_method")].unique())
+            is_weekend = st.selectbox(" Is Weekend?", df[get_col("is_weekend")].unique())
             hour = st.slider("Hour of Day", 0, 23, 12)
-            day = st.slider("Day of Month", 1, 31, 15)
-            month = st.slider("Month", 1, 12, 6)
-            
-            days_map = {0: "Monday", 1: "Tuesday", 2: "Wednesday", 3: "Thursday", 4: "Friday", 5: "Saturday", 6: "Sunday"}
-            day_of_week_str = st.selectbox("Day of Week", list(days_map.values()))
-            # تحويل اسم اليوم إلى رقم (0-6)
-            day_of_week = list(days_map.keys())[list(days_map.values()).index(day_of_week_str)]
+            day = st.selectbox("Day", df[get_col("day")].unique())
+            month = st.selectbox("Month", df[get_col("month")].unique())
+            day_of_week = st.selectbox("Weekday", df[get_col("day_of_week")].unique())
 
     # --- PREDICTION LOGIC ---
     st.markdown("---")
@@ -236,58 +197,33 @@ elif selected == "Real-Time Prediction":
         predict_btn = st.button("🚀 Analyze Transaction", use_container_width=True)
 
     if predict_btn and model:
-        # 1. تشفير المدخلات النصية (Encoding) لتناسب الموديل
-        transaction_type_enc = encode_input('transaction_type', transaction_type_str)
-        device_type_enc = encode_input('device_type', device_type_str)
-        location_enc = encode_input('location', location_str)
-        merchant_category_enc = encode_input('merchant_category', merchant_category_str)
-        card_type_enc = encode_input('card_type', card_type_str)
-        authentication_method_enc = encode_input('authentication_method', authentication_method_str)
-
-        # 2. تجهيز البيانات بنفس ترتيب التدريب في النوت بوك
-        # الأعمدة المستخدمة في التدريب (X_train columns)
-        input_features = [
-            transaction_amount,
-            transaction_type_enc,
-            account_balance,
-            device_type_enc,
-            location_enc,
-            merchant_category_enc,
-            daily_transaction_count,
-            avg_transaction_amount_7d,
-            failed_transaction_count_7d,
-            card_type_enc,
-            card_age,
-            transaction_distance,
-            authentication_method_enc,
-            is_weekend,
-            hour,
-            day,
-            month,
-            day_of_week
+        required_cols = [
+            "transaction_amount", "transaction_type", "account_balance", "device_type",
+            "location", "merchant_category", "daily_transaction_count",
+            "avg_transaction_amount_7d", "failed_transaction_count_7d", "card_type",
+            "card_age", "transaction_distance", "authentication_method", "is_weekend",
+            "hour", "day", "month", "day_of_week"
         ]
         
-        # أسماء الأعمدة لضمان الترتيب الصحيح (اختياري للعرض، مهم للموديل)
-        cols = [
-            'transaction_amount', 'transaction_type', 'account_balance', 'device_type', 
-            'location', 'merchant_category', 'daily_transaction_count', 
-            'avg_transaction_amount_7d', 'failed_transaction_count_7d', 'card_type', 
-            'card_age', 'transaction_distance', 'authentication_method', 'is_weekend', 
-            'hour', 'day', 'month', 'day_of_week'
-        ]
-        
-        input_df = pd.DataFrame([input_features], columns=cols)
+        input_data = pd.DataFrame([[
+            transaction_amount, transaction_type, account_balance, device_type,
+            location, merchant_category, daily_transaction_count,
+            avg_transaction_amount_7d, failed_transaction_count_7d, card_type,
+            card_age, transaction_distance, authentication_method, is_weekend,
+            hour, day, month, day_of_week
+        ]], columns=required_cols)
 
-        # 3. التوقع
         with st.spinner('🔍 AI is scanning patterns...'):
             time.sleep(1) 
             try:
-                probability = model.predict_proba(input_df)[0][1]
+                # ✅ تصحيح: الحساب الخام بدون ضرب في 100
+                probability = model.predict_proba(input_data)[0][1]
             except Exception as e:
                 st.error(f"Prediction Error: {e}")
                 probability = 0.0
 
-        # --- DISPLAY RESULTS ---
+        # --- LOGIC & UI (تم إزالة المسافات البادئة تماماً لإصلاح المربع الرمادي) ---
+        
         if probability > 0.5:
             risk_level = "CRITICAL RISK"
             risk_color = "#FF4B4B"
@@ -309,6 +245,7 @@ elif selected == "Real-Time Prediction":
             
         st.subheader("📋 Security Analysis")
         
+        # ✅ هذا الجزء هو الأهم: HTML يبدأ من أول السطر (بدون مسافات)
         st.markdown(f"""
 <style>
 .security-card {{
