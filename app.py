@@ -5,9 +5,6 @@ import plotly.express as px
 from streamlit_option_menu import option_menu
 import time
 
-# ---------------------------------------------------------
-# 1. Page Configuration
-# ---------------------------------------------------------
 st.set_page_config(
     page_title="FraudGuard AI | Detection System",
     page_icon="🛡️",
@@ -15,13 +12,11 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# ---------------------------------------------------------
-# 2. CSS Styling
-# ---------------------------------------------------------
 st.markdown("""
     <style>
         .block-container {padding-top: 1rem; padding-bottom: 5rem;}
-        h1, h2, h3 {font-family: 'Helvetica Neue', sans-serif; color: #0E1117;}
+        h1, h2, h3 {font-family: 'Helvetica Neue', sans-serif;}
+        
         .stButton>button {
             width: 100%;
             border-radius: 8px;
@@ -30,23 +25,25 @@ st.markdown("""
             color: white;
             font-weight: bold;
             border: none;
+            transition: all 0.3s ease;
         }
         .stButton>button:hover {
             background-color: #0056b3;
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
+        
         .metric-card {
-            background-color: #F0F2F6;
+            background-color: var(--secondary-background-color);
             border-left: 5px solid #007BFF;
             padding: 15px;
-            border-radius: 5px;
+            border-radius: 10px;
             margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
     </style>
 """, unsafe_allow_html=True)
 
-# ---------------------------------------------------------
-# 3. Load Data & Model
-# ---------------------------------------------------------
 DATA_PATH = "Final_fraud_dataset.csv"
 MODEL_PATH = "FraudAI_model.pkl" 
 
@@ -56,7 +53,7 @@ def load_data():
         df = pd.read_csv(DATA_PATH)
         return df
     except FileNotFoundError:
-        st.error("❌ Dataset file not found. Please check the path.")
+        st.error("Dataset file not found.")
         return pd.DataFrame()
 
 @st.cache_resource
@@ -65,15 +62,18 @@ def load_model():
         model = joblib.load(MODEL_PATH)
         return model
     except FileNotFoundError:
-        st.warning("⚠️ Model file not found. Running in UI Demo Mode.")
+        st.warning("Model file not found.")
         return None
 
 df = load_data()
 model = load_model()
 
-# ---------------------------------------------------------
-# 4. Sidebar Menu
-# ---------------------------------------------------------
+target_col = None
+if not df.empty:
+    possible_targets = [c for c in df.columns if 'fraud' in c.lower() or 'target' in c.lower() or 'class' in c.lower()]
+    if possible_targets:
+        target_col = possible_targets[0]
+
 with st.sidebar:
     st.markdown("<h1 style='text-align: center; font-size: 60px;'>🛡️</h1>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'>FraudGuard AI</h2>", unsafe_allow_html=True)
@@ -86,56 +86,82 @@ with st.sidebar:
         menu_icon="cast",
         default_index=1,
         styles={
-            "container": {"padding": "0!important", "background-color": "#fafafa"},
+            "container": {"padding": "0!important", "background-color": "transparent"},
             "icon": {"color": "#007BFF", "font-size": "18px"}, 
             "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px"},
-            "nav-link-selected": {"background-color": "#0E1117"},
+            "nav-link-selected": {"background-color": "#007BFF"},
         }
     )
     st.markdown("---")
     st.info("System Status: **Online** 🟢")
 
-# ---------------------------------------------------------
-# 5. Dashboard Section
-# ---------------------------------------------------------
 if selected == "Dashboard":
-    st.title("📊 Historical Data Overview")
-    st.markdown("Insights derived from historical transaction records.")
+    st.title("📊 Historical Data Analytics")
     
     if not df.empty:
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Total Transactions", f"{len(df):,}")
         col2.metric("Avg Amount", f"${df['transaction_amount'].mean():.2f}")
-        col3.metric("Merchants", df['merchant_category'].nunique())
+        col3.metric("Merchants Involved", df['merchant_category'].nunique())
         
-        target_col = [c for c in df.columns if 'fraud' in c.lower() or 'target' in c.lower() or 'class' in c.lower()]
         if target_col:
-            fraud_count = df[target_col[0]].value_counts().get(1, 0)
-            col4.metric("Fraud Cases", f"{fraud_count}")
+            fraud_count = df[target_col].value_counts().get(1, 0)
+            fraud_percentage = (fraud_count / len(df)) * 100
+            col4.metric("Fraud Cases Detected", f"{fraud_count}", f"{fraud_percentage:.1f}% Rate", delta_color="inverse")
         else:
             col4.metric("Fraud Cases", "N/A")
 
         st.markdown("---")
+        
         c1, c2 = st.columns(2)
         with c1:
-            st.subheader("Transactions by Device")
+            st.subheader("📱 Device Usage")
             if 'device_type' in df.columns:
-                fig_device = px.pie(df, names='device_type', title="Device Distribution", hole=0.5, color_discrete_sequence=px.colors.sequential.RdBu)
+                fig_device = px.pie(df, names='device_type', hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
+                fig_device.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_device, use_container_width=True)
         
         with c2:
-            st.subheader("Amount Distribution")
-            fig_hist = px.histogram(df, x="transaction_amount", nbins=50, title="Transaction Amounts", color_discrete_sequence=['#007BFF'])
+            st.subheader("💰 Amount Distribution")
+            fig_hist = px.histogram(df, x="transaction_amount", nbins=40, color_discrete_sequence=['#007BFF'])
+            fig_hist.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", yaxis_title="Count")
             st.plotly_chart(fig_hist, use_container_width=True)
 
-# ---------------------------------------------------------
-# 6. Real-Time Prediction Section (UPDATED)
-# ---------------------------------------------------------
+        if target_col:
+            st.markdown("### 🕵️‍♂️ Fraud Pattern Analysis")
+            
+            fraud_df = df[df[target_col] == 1]
+            
+            row3_1, row3_2 = st.columns(2)
+            
+            with row3_1:
+                st.markdown("**High Risk Merchant Categories**")
+                if 'merchant_category' in fraud_df.columns:
+                    fraud_by_merch = fraud_df['merchant_category'].value_counts().reset_index()
+                    fraud_by_merch.columns = ['Category', 'Fraud Count']
+                    fig_merch = px.bar(fraud_by_merch, x='Category', y='Fraud Count', color='Fraud Count', color_continuous_scale='Reds')
+                    fig_merch.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                    st.plotly_chart(fig_merch, use_container_width=True)
+            
+            with row3_2:
+                st.markdown("**Fraud by Hour of Day**")
+                if 'hour' in fraud_df.columns:
+                    fig_hour = px.histogram(fraud_df, x="hour", nbins=24, title="Peak Fraud Hours", color_discrete_sequence=['#FF4B4B'])
+                    fig_hour.update_layout(bargap=0.1, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                    st.plotly_chart(fig_hour, use_container_width=True)
+            
+            st.markdown("**Geographical Fraud Distribution**")
+            if 'location' in fraud_df.columns:
+                fraud_by_loc = fraud_df['location'].value_counts().reset_index()
+                fraud_by_loc.columns = ['Location', 'Count']
+                fig_loc = px.bar(fraud_by_loc, x='Count', y='Location', orientation='h', color='Count', color_continuous_scale='Oranges')
+                fig_loc.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
+                st.plotly_chart(fig_loc, use_container_width=True)
+
 elif selected == "Real-Time Prediction":
     st.title("🛡️ Transaction Scanner")
     st.markdown("Enter transaction details below to estimate fraud probability.")
 
-    # --- DEFINING EXPLICIT MAPPINGS ---
     Transaction_Type_dict = {'ATM Withdrawal': 0, 'Bank Transfer': 1, 'Online': 2, 'POS': 3}
     Device_Type_dict = {'Laptop': 0, 'Mobile': 1, 'Tablet': 2}
     Location_dict = {'London': 0, 'Mumbai': 1, 'New York': 2, 'Sydney': 3, 'Tokyo': 4}
@@ -143,29 +169,23 @@ elif selected == "Real-Time Prediction":
     Card_Type_dict = {'Amex': 0, 'Discover': 1, 'Mastercard': 2, 'Visa': 3}
     Authentication_Method_dict = {'Biometric': 0, 'OTP': 1, 'PIN': 2, 'Password': 3}
 
-    with st.container():
-        st.subheader("Transaction Details")
-        
+    with st.expander("📝 Enter Transaction Details", expanded=True):
         c1, c2, c3 = st.columns(3)
         
         with c1:
             transaction_amount = st.number_input("Amount ($)", min_value=0.0, step=10.0, value=100.0)
             
-            # Transaction Type
             selected_trans = st.selectbox("Type", list(Transaction_Type_dict.keys()))
             transaction_type_val = Transaction_Type_dict[selected_trans]
 
             account_balance = st.number_input("Account Balance", min_value=0.0, value=5000.0)
             
-            # Device Type
             selected_device = st.selectbox("Device", list(Device_Type_dict.keys()))
             device_type_val = Device_Type_dict[selected_device]
             
-            # Location
             selected_loc = st.selectbox("Location", list(Location_dict.keys()))
             location_val = Location_dict[selected_loc]
             
-            # Merchant
             selected_merch = st.selectbox("Merchant", list(Merchant_Category_dict.keys()))
             merchant_val = Merchant_Category_dict[selected_merch]
 
@@ -174,7 +194,6 @@ elif selected == "Real-Time Prediction":
             avg_transaction_amount_7d = st.number_input("Avg Amount (7d)", min_value=0.0, value=50.0)
             failed_transaction_count_7d = st.number_input("Failed Count (7d)", min_value=0)
             
-            # Card Type
             selected_card = st.selectbox("Card Type", list(Card_Type_dict.keys()))
             card_type_val = Card_Type_dict[selected_card]
             
@@ -182,7 +201,6 @@ elif selected == "Real-Time Prediction":
             transaction_distance = st.number_input("Distance (km)", min_value=0.0)
 
         with c3:
-            # Authentication Method
             selected_auth = st.selectbox("Auth Method", list(Authentication_Method_dict.keys()))
             auth_method_val = Authentication_Method_dict[selected_auth]
 
@@ -203,7 +221,6 @@ elif selected == "Real-Time Prediction":
         predict_btn = st.button("🚀 Analyze Transaction", use_container_width=True)
 
     if predict_btn and model:
-        # Construct DataFrame with exactly the same columns used in training
         input_data = pd.DataFrame([[
             transaction_amount, 
             transaction_type_val, 
@@ -234,13 +251,11 @@ elif selected == "Real-Time Prediction":
         with st.spinner('🔍 AI is scanning patterns...'):
             time.sleep(1) 
             try:
-                # Get Probability
                 probability = model.predict_proba(input_data)[0][1]
             except Exception as e:
                 st.error(f"Prediction Error: {e}")
                 probability = 0.0
 
-        # Logic for UI Display
         if probability > 0.5:
             risk_level = "CRITICAL RISK"
             risk_color = "#FF4B4B"
@@ -265,7 +280,7 @@ elif selected == "Real-Time Prediction":
         st.markdown(f"""
 <style>
 .security-card {{
-    background-color: white;
+    background-color: var(--secondary-background-color);
     border-radius: 15px;
     padding: 30px;
     text-align: center;
@@ -291,7 +306,7 @@ elif selected == "Real-Time Prediction":
     font-size: 70px;
 }}
 .risk-bar-bg {{
-    background-color: #f0f0f0;
+    background-color: #e0e0e0;
     border-radius: 10px;
     height: 12px;
     width: 100%;
@@ -317,7 +332,7 @@ elif selected == "Real-Time Prediction":
 <div class="risk-label">Analysis Result</div>
 <div class="icon-display">{risk_icon}</div>
 <div class="main-status">{risk_level}</div>
-<p style="color: #555; font-size: 18px;">{risk_message}</p>
+<p style="color: var(--text-color); font-size: 18px;">{risk_message}</p>
 
 <div class="labels-row">
 <span>Safe</span>
