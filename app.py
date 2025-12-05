@@ -145,20 +145,20 @@ if selected == "Dashboard":
         
         c1, c2 = st.columns(2)
         with c1:
-            st.subheader("📱 Device Usage")
+            st.subheader(" Device Usage")
             if 'device_type' in viz_df.columns:
                 fig_device = px.pie(viz_df, names='device_type', hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
                 fig_device.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_device, use_container_width=True)
         
         with c2:
-            st.subheader("💰 Amount Distribution")
+            st.subheader(" Amount Distribution")
             fig_hist = px.histogram(viz_df, x="transaction_amount", nbins=40, color_discrete_sequence=['#007BFF'])
             fig_hist.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", yaxis_title="Count")
             st.plotly_chart(fig_hist, use_container_width=True)
 
         if target_col:
-            st.markdown("### 🕵️‍♂️ Fraud Pattern Analysis")
+            st.markdown("###  Fraud Pattern Analysis")
             
             fraud_df = viz_df[viz_df[target_col] == 1]
             
@@ -378,3 +378,4 @@ elif selected == "Real-Time Prediction":
 </div>
 </div>
 """, unsafe_allow_html=True)
+
