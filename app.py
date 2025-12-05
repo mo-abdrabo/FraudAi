@@ -5,9 +5,15 @@ import plotly.express as px
 from streamlit_option_menu import option_menu
 import time
 
+Transaction_Type_dict = {'ATM Withdrawal': 0, 'Bank Transfer': 1, 'Online': 2, 'POS': 3}
+Device_Type_dict = {'Laptop': 0, 'Mobile': 1, 'Tablet': 2}
+Location_dict = {'London': 0, 'Mumbai': 1, 'New York': 2, 'Sydney': 3, 'Tokyo': 4}
+Merchant_Category_dict = {'Clothing': 0, 'Electronics': 1, 'Groceries': 2, 'Restaurants': 3, 'Travel': 4}
+Card_Type_dict = {'Amex': 0, 'Discover': 1, 'Mastercard': 2, 'Visa': 3}
+Authentication_Method_dict = {'Biometric': 0, 'OTP': 1, 'PIN': 2, 'Password': 3}
+
 st.set_page_config(
-    page_title="FraudGuard AI | Detection System",
-    page_icon="🛡️",
+    page_title="FraudGuard AI",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -75,7 +81,6 @@ if not df.empty:
         target_col = possible_targets[0]
 
 with st.sidebar:
-    st.markdown("<h1 style='text-align: center; font-size: 60px;'>🛡️</h1>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'>FraudGuard AI</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
@@ -93,12 +98,25 @@ with st.sidebar:
         }
     )
     st.markdown("---")
-    st.info("System Status: **Online** 🟢")
+    st.info("System Status: Online")
 
 if selected == "Dashboard":
-    st.title("📊 Historical Data Analytics")
+    st.title("Historical Data Analytics")
     
     if not df.empty:
+        viz_df = df.copy()
+        
+        inv_device = {v: k for k, v in Device_Type_dict.items()}
+        inv_merchant = {v: k for k, v in Merchant_Category_dict.items()}
+        inv_location = {v: k for k, v in Location_dict.items()}
+
+        if 'device_type' in viz_df.columns:
+            viz_df['device_type'] = viz_df['device_type'].map(inv_device).fillna(viz_df['device_type'])
+        if 'merchant_category' in viz_df.columns:
+            viz_df['merchant_category'] = viz_df['merchant_category'].map(inv_merchant).fillna(viz_df['merchant_category'])
+        if 'location' in viz_df.columns:
+            viz_df['location'] = viz_df['location'].map(inv_location).fillna(viz_df['location'])
+
         col1, col2, col3, col4 = st.columns(4)
         col1.metric("Total Transactions", f"{len(df):,}")
         col2.metric("Avg Amount", f"${df['transaction_amount'].mean():.2f}")
@@ -115,22 +133,22 @@ if selected == "Dashboard":
         
         c1, c2 = st.columns(2)
         with c1:
-            st.subheader("📱 Device Usage")
-            if 'device_type' in df.columns:
-                fig_device = px.pie(df, names='device_type', hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
+            st.subheader("Device Usage")
+            if 'device_type' in viz_df.columns:
+                fig_device = px.pie(viz_df, names='device_type', hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
                 fig_device.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_device, use_container_width=True)
         
         with c2:
-            st.subheader("💰 Amount Distribution")
-            fig_hist = px.histogram(df, x="transaction_amount", nbins=40, color_discrete_sequence=['#007BFF'])
+            st.subheader("Amount Distribution")
+            fig_hist = px.histogram(viz_df, x="transaction_amount", nbins=40, color_discrete_sequence=['#007BFF'])
             fig_hist.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", yaxis_title="Count")
             st.plotly_chart(fig_hist, use_container_width=True)
 
         if target_col:
-            st.markdown("### 🕵️‍♂️ Fraud Pattern Analysis")
+            st.markdown("### Fraud Pattern Analysis")
             
-            fraud_df = df[df[target_col] == 1]
+            fraud_df = viz_df[viz_df[target_col] == 1]
             
             row3_1, row3_2 = st.columns(2)
             
@@ -159,17 +177,10 @@ if selected == "Dashboard":
                 st.plotly_chart(fig_loc, use_container_width=True)
 
 elif selected == "Real-Time Prediction":
-    st.title("🛡️ Transaction Scanner")
+    st.title("Transaction Scanner")
     st.markdown("Enter transaction details below to estimate fraud probability.")
 
-    Transaction_Type_dict = {'ATM Withdrawal': 0, 'Bank Transfer': 1, 'Online': 2, 'POS': 3}
-    Device_Type_dict = {'Laptop': 0, 'Mobile': 1, 'Tablet': 2}
-    Location_dict = {'London': 0, 'Mumbai': 1, 'New York': 2, 'Sydney': 3, 'Tokyo': 4}
-    Merchant_Category_dict = {'Clothing': 0, 'Electronics': 1, 'Groceries': 2, 'Restaurants': 3, 'Travel': 4}
-    Card_Type_dict = {'Amex': 0, 'Discover': 1, 'Mastercard': 2, 'Visa': 3}
-    Authentication_Method_dict = {'Biometric': 0, 'OTP': 1, 'PIN': 2, 'Password': 3}
-
-    with st.expander("📝 Enter Transaction Details", expanded=True):
+    with st.expander("Enter Transaction Details", expanded=True):
         c1, c2, c3 = st.columns(3)
         
         with c1:
@@ -218,7 +229,7 @@ elif selected == "Real-Time Prediction":
     center_col1, center_col2, center_col3 = st.columns([1, 2, 1])
     
     with center_col2:
-        predict_btn = st.button("🚀 Analyze Transaction", use_container_width=True)
+        predict_btn = st.button("Analyze Transaction", use_container_width=True)
 
     if predict_btn and model:
         input_data = pd.DataFrame([[
@@ -248,7 +259,7 @@ elif selected == "Real-Time Prediction":
             "hour", "day", "month", "day_of_week"
         ])
 
-        with st.spinner('🔍 AI is scanning patterns...'):
+        with st.spinner('Scanning patterns...'):
             time.sleep(1) 
             try:
                 probability = model.predict_proba(input_data)[0][1]
@@ -259,23 +270,20 @@ elif selected == "Real-Time Prediction":
         if probability > 0.5:
             risk_level = "CRITICAL RISK"
             risk_color = "#FF4B4B"
-            risk_icon = "🛡️❌"
             risk_message = "Transaction Blocked - High Fraud Probability"
             bar_width = "100%"
         elif probability > 0.3:
             risk_level = "WARNING"
             risk_color = "#FFA500"
-            risk_icon = "⚠️"
             risk_message = "Manual Review Required"
             bar_width = "60%"
         else:
             risk_level = "SAFE"
             risk_color = "#00CC96"
-            risk_icon = "🛡️✅"
             risk_message = "Transaction Verified Successfully"
             bar_width = "5%"
             
-        st.subheader("📋 Security Analysis")
+        st.subheader("Security Analysis")
         
         st.markdown(f"""
 <style>
@@ -302,9 +310,6 @@ elif selected == "Real-Time Prediction":
     font-weight: 900;
     margin: 15px 0;
 }}
-.icon-display {{
-    font-size: 70px;
-}}
 .risk-bar-bg {{
     background-color: #e0e0e0;
     border-radius: 10px;
@@ -330,7 +335,6 @@ elif selected == "Real-Time Prediction":
 
 <div class="security-card">
 <div class="risk-label">Analysis Result</div>
-<div class="icon-display">{risk_icon}</div>
 <div class="main-status">{risk_level}</div>
 <p style="color: var(--text-color); font-size: 18px;">{risk_message}</p>
 
