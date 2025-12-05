@@ -58,34 +58,17 @@ def load_data():
         df = pd.read_csv(DATA_PATH)
         return df
     except FileNotFoundError:
-        st.error(f"❌ Dataset file not found. Please make sure '{DATA_PATH}' exists.")
+        st.error("❌ Dataset file not found. Please check the path.")
         return pd.DataFrame()
-
-# ✅ دالة الإصلاح الشاملة للموديل (لحل مشكلة monotonic_cst)
-def patch_model_recursive(model):
-    try:
-        if hasattr(model, "estimators_"):
-            for estimator in model.estimators_:
-                patch_model_recursive(estimator)
-        elif hasattr(model, "steps"):
-            for _, step in model.steps:
-                patch_model_recursive(step)
-        else:
-            if not hasattr(model, "monotonic_cst"):
-                setattr(model, "monotonic_cst", None)
-    except Exception:
-        pass
 
 @st.cache_resource
 def load_model():
     try:
         model = joblib.load(MODEL_PATH)
-        patch_model_recursive(model) # تطبيق الإصلاح
         return model
     except FileNotFoundError:
-        st.warning(f"⚠️ Model file '{MODEL_PATH}' not found. Please check filename on GitHub.")
+        st.warning("⚠️ Model file not found. Running in UI Demo Mode.")
         return None
-
 # تحميل البيانات والموديل
 df = load_data()
 model = load_model()
@@ -313,4 +296,5 @@ elif selected == "Real-Time Prediction":
 </div>
 </div>
 """, unsafe_allow_html=True)
+
 
