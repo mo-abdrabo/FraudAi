@@ -5,6 +5,9 @@ import plotly.express as px
 from streamlit_option_menu import option_menu
 import time
 
+# ---------------------------------------------------------
+# 1. Page Configuration
+# ---------------------------------------------------------
 st.set_page_config(
     page_title="FraudGuard AI | Detection System",
     page_icon="🛡️",
@@ -12,6 +15,9 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
+# ---------------------------------------------------------
+# 2. CSS Styling
+# ---------------------------------------------------------
 st.markdown("""
     <style>
         .block-container {padding-top: 1rem; padding-bottom: 5rem;}
@@ -38,6 +44,9 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
+# ---------------------------------------------------------
+# 3. Load Data & Model
+# ---------------------------------------------------------
 DATA_PATH = "Final_fraud_dataset.csv"
 MODEL_PATH = "FraudAI_model.pkl" 
 
@@ -62,6 +71,9 @@ def load_model():
 df = load_data()
 model = load_model()
 
+# ---------------------------------------------------------
+# 4. Sidebar Menu
+# ---------------------------------------------------------
 with st.sidebar:
     st.markdown("<h1 style='text-align: center; font-size: 60px;'>🛡️</h1>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'>FraudGuard AI</h2>", unsafe_allow_html=True)
@@ -83,6 +95,9 @@ with st.sidebar:
     st.markdown("---")
     st.info("System Status: **Online** 🟢")
 
+# ---------------------------------------------------------
+# 5. Dashboard Section
+# ---------------------------------------------------------
 if selected == "Dashboard":
     st.title("📊 Historical Data Overview")
     st.markdown("Insights derived from historical transaction records.")
@@ -113,23 +128,20 @@ if selected == "Dashboard":
             fig_hist = px.histogram(df, x="transaction_amount", nbins=50, title="Transaction Amounts", color_discrete_sequence=['#007BFF'])
             st.plotly_chart(fig_hist, use_container_width=True)
 
+# ---------------------------------------------------------
+# 6. Real-Time Prediction Section (UPDATED)
+# ---------------------------------------------------------
 elif selected == "Real-Time Prediction":
     st.title("🛡️ Transaction Scanner")
     st.markdown("Enter transaction details below to estimate fraud probability.")
 
-    transaction_map = {'ATM Withdrawal': 0, 'Bank Transfer': 1, 'Online': 2, 'POS': 3}
-    device_map = {'Laptop': 0, 'Mobile': 1, 'Tablet': 2}
-    location_map = {'London': 0, 'Mumbai': 1, 'New York': 2, 'Sydney': 3, 'Tokyo': 4}
-
-    def get_auto_mapping(col_name):
-        if col_name in df.columns:
-            unique_vals = sorted(df[col_name].astype(str).unique())
-            return {val: i for i, val in enumerate(unique_vals)}
-        return {}
-
-    merchant_map = get_auto_mapping("merchant_category")
-    card_map = get_auto_mapping("card_type")
-    auth_map = get_auto_mapping("authentication_method")
+    # --- DEFINING EXPLICIT MAPPINGS ---
+    Transaction_Type_dict = {'ATM Withdrawal': 0, 'Bank Transfer': 1, 'Online': 2, 'POS': 3}
+    Device_Type_dict = {'Laptop': 0, 'Mobile': 1, 'Tablet': 2}
+    Location_dict = {'London': 0, 'Mumbai': 1, 'New York': 2, 'Sydney': 3, 'Tokyo': 4}
+    Merchant_Category_dict = {'Clothing': 0, 'Electronics': 1, 'Groceries': 2, 'Restaurants': 3, 'Travel': 4}
+    Card_Type_dict = {'Amex': 0, 'Discover': 1, 'Mastercard': 2, 'Visa': 3}
+    Authentication_Method_dict = {'Biometric': 0, 'OTP': 1, 'PIN': 2, 'Password': 3}
 
     with st.container():
         st.subheader("Transaction Details")
@@ -139,34 +151,40 @@ elif selected == "Real-Time Prediction":
         with c1:
             transaction_amount = st.number_input("Amount ($)", min_value=0.0, step=10.0, value=100.0)
             
-            t_type_label = st.selectbox("Type", options=list(transaction_map.keys()))
-            transaction_type_val = transaction_map[t_type_label]
+            # Transaction Type
+            selected_trans = st.selectbox("Type", list(Transaction_Type_dict.keys()))
+            transaction_type_val = Transaction_Type_dict[selected_trans]
 
             account_balance = st.number_input("Account Balance", min_value=0.0, value=5000.0)
             
-            dev_label = st.selectbox("Device", options=list(device_map.keys()))
-            device_type_val = device_map[dev_label]
+            # Device Type
+            selected_device = st.selectbox("Device", list(Device_Type_dict.keys()))
+            device_type_val = Device_Type_dict[selected_device]
             
-            loc_label = st.selectbox("Location", options=list(location_map.keys()))
-            location_val = location_map[loc_label]
+            # Location
+            selected_loc = st.selectbox("Location", list(Location_dict.keys()))
+            location_val = Location_dict[selected_loc]
             
-            merch_label = st.selectbox("Merchant", options=list(merchant_map.keys()))
-            merchant_val = merchant_map[merch_label]
+            # Merchant
+            selected_merch = st.selectbox("Merchant", list(Merchant_Category_dict.keys()))
+            merchant_val = Merchant_Category_dict[selected_merch]
 
         with c2:
             daily_transaction_count = st.number_input("Daily Count", min_value=0, value=1)
             avg_transaction_amount_7d = st.number_input("Avg Amount (7d)", min_value=0.0, value=50.0)
             failed_transaction_count_7d = st.number_input("Failed Count (7d)", min_value=0)
             
-            card_label = st.selectbox("Card Type", options=list(card_map.keys()))
-            card_type_val = card_map[card_label]
+            # Card Type
+            selected_card = st.selectbox("Card Type", list(Card_Type_dict.keys()))
+            card_type_val = Card_Type_dict[selected_card]
             
             card_age = st.number_input("Card Age (Days)", min_value=0, value=365)
             transaction_distance = st.number_input("Distance (km)", min_value=0.0)
 
         with c3:
-            auth_label = st.selectbox("Auth Method", options=list(auth_map.keys()))
-            auth_method_val = auth_map[auth_label]
+            # Authentication Method
+            selected_auth = st.selectbox("Auth Method", list(Authentication_Method_dict.keys()))
+            auth_method_val = Authentication_Method_dict[selected_auth]
 
             is_weekend_val = st.selectbox("Is Weekend?", [0, 1], format_func=lambda x: "Yes" if x == 1 else "No")
             
@@ -185,6 +203,7 @@ elif selected == "Real-Time Prediction":
         predict_btn = st.button("🚀 Analyze Transaction", use_container_width=True)
 
     if predict_btn and model:
+        # Construct DataFrame with exactly the same columns used in training
         input_data = pd.DataFrame([[
             transaction_amount, 
             transaction_type_val, 
@@ -215,11 +234,13 @@ elif selected == "Real-Time Prediction":
         with st.spinner('🔍 AI is scanning patterns...'):
             time.sleep(1) 
             try:
+                # Get Probability
                 probability = model.predict_proba(input_data)[0][1]
             except Exception as e:
                 st.error(f"Prediction Error: {e}")
                 probability = 0.0
 
+        # Logic for UI Display
         if probability > 0.5:
             risk_level = "CRITICAL RISK"
             risk_color = "#FF4B4B"
