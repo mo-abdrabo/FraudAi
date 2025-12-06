@@ -10,7 +10,7 @@ import time
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FraudGuard AI | Detection System",
-    page_icon="🛡",
+    page_icon="🛡️",
     layout="wide",
     initial_sidebar_state="expanded"
 )
@@ -71,7 +71,7 @@ def load_model():
         model = joblib.load(MODEL_PATH)
         return model
     except FileNotFoundError:
-        st.warning("⚠ Model file not found.")
+        st.warning("⚠️ Model file not found.")
         return None
 
 df = load_data()
@@ -87,7 +87,7 @@ if not df.empty:
 # 4. Sidebar Menu
 # ---------------------------------------------------------
 with st.sidebar:
-    st.markdown("<h1 style='text-align: center; font-size: 60px;'>🛡</h1>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; font-size: 60px;'>🛡️</h1>", unsafe_allow_html=True)
     st.markdown("<h2 style='text-align: center;'>FraudGuard AI</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
@@ -105,7 +105,7 @@ with st.sidebar:
         }
     )
     st.markdown("---")
-    st.info("System Status: *Online* 🟢")
+    st.info("System Status: **Online** 🟢")
 
 # ---------------------------------------------------------
 # 5. Dashboard Section
@@ -165,7 +165,7 @@ if selected == "Dashboard":
             row3_1, row3_2 = st.columns(2)
             
             with row3_1:
-                st.markdown("*High Risk Merchant Categories*")
+                st.markdown("**High Risk Merchant Categories**")
                 if 'merchant_category' in fraud_df.columns:
                     fraud_by_merch = fraud_df['merchant_category'].value_counts().reset_index()
                     fraud_by_merch.columns = ['Category', 'Fraud Count']
@@ -174,13 +174,13 @@ if selected == "Dashboard":
                     st.plotly_chart(fig_merch, use_container_width=True)
             
             with row3_2:
-                st.markdown("*Fraud by Hour of Day*")
+                st.markdown("**Fraud by Hour of Day**")
                 if 'hour' in fraud_df.columns:
                     fig_hour = px.histogram(fraud_df, x="hour", nbins=24, title="Peak Fraud Hours", color_discrete_sequence=['#FF4B4B'])
                     fig_hour.update_layout(bargap=0.1, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                     st.plotly_chart(fig_hour, use_container_width=True)
             
-            st.markdown("*Geographical Fraud Distribution*")
+            st.markdown("**Geographical Fraud Distribution**")
             if 'location' in fraud_df.columns:
                 fraud_by_loc = fraud_df['location'].value_counts().reset_index()
                 fraud_by_loc.columns = ['Location', 'Count']
@@ -192,7 +192,7 @@ if selected == "Dashboard":
 # 6. Real-Time Prediction Section
 # ---------------------------------------------------------
 elif selected == "Real-Time Prediction":
-    st.title("🛡 Transaction Scanner")
+    st.title("🛡️ Transaction Scanner")
     st.markdown("Enter transaction details below to estimate fraud probability.")
 
     # Mappings definition
@@ -293,19 +293,19 @@ elif selected == "Real-Time Prediction":
         if probability > 0.5:
             risk_level = "CRITICAL RISK"
             risk_color = "#FF4B4B"
-            risk_icon = "🛡❌"
+            risk_icon = "🛡️❌"
             risk_message = "Transaction Blocked - High Fraud Probability"
             bar_width = "100%"
         elif probability > 0.3:
             risk_level = "WARNING"
             risk_color = "#FFA500"
-            risk_icon = "⚠"
+            risk_icon = "⚠️"
             risk_message = "Manual Review Required"
             bar_width = "60%"
         else:
             risk_level = "SAFE"
             risk_color = "#00CC96"
-            risk_icon = "🛡✅"
+            risk_icon = "🛡️✅"
             risk_message = "Transaction Verified Successfully"
             bar_width = "5%"
             
