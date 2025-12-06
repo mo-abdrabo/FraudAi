@@ -10,91 +10,42 @@ import time
 # ---------------------------------------------------------
 st.set_page_config(
     page_title="FraudGuard AI | Detection System",
-    page_icon="🛡️",
+    page_icon="🛡",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
 # ---------------------------------------------------------
-# 2. CSS Styling (Unique Dark Mode)
+# 2. CSS Styling
 # ---------------------------------------------------------
 st.markdown("""
     <style>
-        /* General Main Background */
-        .stApp {
-            background-color: #0E1117;
-            color: #FAFAFA;
-        }
+        .block-container {padding-top: 1rem; padding-bottom: 5rem;}
+        h1, h2, h3 {font-family: 'Helvetica Neue', sans-serif;}
         
-        /* Sidebar Styling */
-        [data-testid="stSidebar"] {
-            background-color: #161B22;
-            border-right: 1px solid #30363D;
-        }
-        
-        /* Typography */
-        h1, h2, h3, h4, h5, h6 {
-            font-family: 'Segoe UI', sans-serif;
-            color: #E6EDF3 !important;
-        }
-        
-        /* Button Styling - Cyberpunk Feel */
         .stButton>button {
             width: 100%;
-            border-radius: 6px;
+            border-radius: 8px;
             height: 3em;
-            background: linear-gradient(90deg, #007BFF 0%, #0056b3 100%);
+            background-color: #007BFF; 
             color: white;
-            font-weight: 600;
-            border: 1px solid #004494;
+            font-weight: bold;
+            border: none;
             transition: all 0.3s ease;
-            text-transform: uppercase;
-            letter-spacing: 1px;
         }
         .stButton>button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 123, 255, 0.4);
-            border-color: #007BFF;
+            background-color: #0056b3;
+            transform: scale(1.02);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
         }
         
-        /* Metric Cards - Glassmorphism */
         .metric-card {
-            background: rgba(22, 27, 34, 0.8);
-            border: 1px solid #30363D;
-            border-left: 4px solid #007BFF;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 15px;
-            backdrop-filter: blur(10px);
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
-        }
-        
-        /* Custom Input Fields */
-        .stSelectbox div[data-baseweb="select"] > div, 
-        .stNumberInput div[data-baseweb="input"] > div {
-            background-color: #0D1117 !important;
-            color: white !important;
-            border: 1px solid #30363D !important;
-        }
-        
-        /* Expander Styling */
-        .streamlit-expanderHeader {
-            background-color: #161B22 !important;
-            color: #E6EDF3 !important;
-            border: 1px solid #30363D;
-            border-radius: 8px;
-        }
-        
-        /* Metric Value Color */
-        [data-testid="stMetricValue"] {
-            color: #58A6FF !important;
-        }
-        
-        /* Success/Error/Warning Messages */
-        .stAlert {
-            background-color: #161B22;
-            border: 1px solid #30363D;
-            color: #E6EDF3;
+            background-color: var(--secondary-background-color);
+            border-left: 5px solid #007BFF;
+            padding: 15px;
+            border-radius: 10px;
+            margin-bottom: 10px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
         }
     </style>
 """, unsafe_allow_html=True)
@@ -120,7 +71,7 @@ def load_model():
         model = joblib.load(MODEL_PATH)
         return model
     except FileNotFoundError:
-        st.warning("⚠️ Model file not found.")
+        st.warning("⚠ Model file not found.")
         return None
 
 df = load_data()
@@ -136,8 +87,8 @@ if not df.empty:
 # 4. Sidebar Menu
 # ---------------------------------------------------------
 with st.sidebar:
-    st.markdown("<h1 style='text-align: center; font-size: 60px;'>🛡️</h1>", unsafe_allow_html=True)
-    st.markdown("<h2 style='text-align: center; color: #E6EDF3;'>FraudGuard AI</h2>", unsafe_allow_html=True)
+    st.markdown("<h1 style='text-align: center; font-size: 60px;'>🛡</h1>", unsafe_allow_html=True)
+    st.markdown("<h2 style='text-align: center;'>FraudGuard AI</h2>", unsafe_allow_html=True)
     st.markdown("---")
     
     selected = option_menu(
@@ -148,13 +99,13 @@ with st.sidebar:
         default_index=1,
         styles={
             "container": {"padding": "0!important", "background-color": "transparent"},
-            "icon": {"color": "#58A6FF", "font-size": "18px"}, 
-            "nav-link": {"font-size": "16px", "text-align": "left", "margin":"5px", "color": "#E6EDF3"},
-            "nav-link-selected": {"background-color": "#1F6FEB", "color": "white"},
+            "icon": {"color": "#007BFF", "font-size": "18px"}, 
+            "nav-link": {"font-size": "16px", "text-align": "left", "margin":"0px"},
+            "nav-link-selected": {"background-color": "#007BFF"},
         }
     )
     st.markdown("---")
-    st.info("System Status: **Online** 🟢")
+    st.info("System Status: *Online* 🟢")
 
 # ---------------------------------------------------------
 # 5. Dashboard Section
@@ -163,8 +114,10 @@ if selected == "Dashboard":
     st.title("📊 Historical Data Analytics")
     
     if not df.empty:
+        # تجهيز البيانات للرسم (استبدال الأرقام بالأسماء)
         viz_df = df.copy()
         
+        # تعريف القواميس للعرض فقط
         inv_device = {0: 'Laptop', 1: 'Mobile', 2: 'Tablet'}
         inv_merchant = {0: 'Clothing', 1: 'Electronics', 2: 'Groceries', 3: 'Restaurants', 4: 'Travel'}
         inv_location = {0: 'London', 1: 'Mumbai', 2: 'New York', 3: 'Sydney', 4: 'Tokyo'}
@@ -176,74 +129,62 @@ if selected == "Dashboard":
         if 'location' in viz_df.columns:
             viz_df['location'] = viz_df['location'].map(inv_location).fillna(viz_df['location'])
 
-        # Custom HTML metrics to fit the dark theme
         col1, col2, col3, col4 = st.columns(4)
+        col1.metric("Total Transactions", f"{len(df):,}")
+        col2.metric("Avg Amount", f"${df['transaction_amount'].mean():.2f}")
+        col3.metric("Merchants Involved", df['merchant_category'].nunique())
         
-        def custom_metric(label, value, delta=None):
-            st.markdown(f"""
-            <div class="metric-card">
-                <div style="font-size: 14px; color: #8B949E;">{label}</div>
-                <div style="font-size: 24px; font-weight: bold; color: #E6EDF3;">{value}</div>
-                <div style="font-size: 12px; color: #58A6FF;">{delta if delta else ''}</div>
-            </div>
-            """, unsafe_allow_html=True)
+        if target_col:
+            fraud_count = df[target_col].value_counts().get(1, 0)
+            fraud_percentage = (fraud_count / len(df)) * 100
+            col4.metric("Fraud Cases Detected", f"{fraud_count}", f"{fraud_percentage:.1f}% Rate", delta_color="inverse")
+        else:
+            col4.metric("Fraud Cases", "N/A")
 
-        with col1: custom_metric("Total Transactions", f"{len(df):,}")
-        with col2: custom_metric("Avg Amount", f"${df['transaction_amount'].mean():.2f}")
-        with col3: custom_metric("Merchants Involved", f"{df['merchant_category'].nunique()}")
-        
-        with col4:
-            if target_col:
-                fraud_count = df[target_col].value_counts().get(1, 0)
-                fraud_percentage = (fraud_count / len(df)) * 100
-                custom_metric("Fraud Cases Detected", f"{fraud_count}", f"{fraud_percentage:.1f}% Rate")
-            else:
-                custom_metric("Fraud Cases", "N/A")
-
-        st.markdown("<br>", unsafe_allow_html=True)
+        st.markdown("---")
         
         c1, c2 = st.columns(2)
         with c1:
-            st.subheader("Device Usage")
+            st.subheader(" Device Usage")
             if 'device_type' in viz_df.columns:
-                fig_device = px.pie(viz_df, names='device_type', hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel, template="plotly_dark")
+                fig_device = px.pie(viz_df, names='device_type', hole=0.4, color_discrete_sequence=px.colors.qualitative.Pastel)
                 fig_device.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_device, use_container_width=True)
         
         with c2:
             st.subheader(" Amount Distribution")
-            fig_hist = px.histogram(viz_df, x="transaction_amount", nbins=40, color_discrete_sequence=['#1F6FEB'], template="plotly_dark")
+            fig_hist = px.histogram(viz_df, x="transaction_amount", nbins=40, color_discrete_sequence=['#007BFF'])
             fig_hist.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)", yaxis_title="Count")
             st.plotly_chart(fig_hist, use_container_width=True)
 
         if target_col:
-            st.markdown("### Fraud Pattern Analysis")
+            st.markdown("###  Fraud Pattern Analysis")
             
             fraud_df = viz_df[viz_df[target_col] == 1]
             
             row3_1, row3_2 = st.columns(2)
             
             with row3_1:
-                st.markdown("**High Risk Merchant Categories**")
+                st.markdown("*High Risk Merchant Categories*")
                 if 'merchant_category' in fraud_df.columns:
                     fraud_by_merch = fraud_df['merchant_category'].value_counts().reset_index()
                     fraud_by_merch.columns = ['Category', 'Fraud Count']
-                    fig_merch = px.bar(fraud_by_merch, x='Category', y='Fraud Count', color='Fraud Count', color_continuous_scale='Reds', template="plotly_dark")
+                    fig_merch = px.bar(fraud_by_merch, x='Category', y='Fraud Count', color='Fraud Count', color_continuous_scale='Reds')
                     fig_merch.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                     st.plotly_chart(fig_merch, use_container_width=True)
             
             with row3_2:
-                st.markdown("**Fraud by Hour of Day**")
+                st.markdown("*Fraud by Hour of Day*")
                 if 'hour' in fraud_df.columns:
-                    fig_hour = px.histogram(fraud_df, x="hour", nbins=24, title="Peak Fraud Hours", color_discrete_sequence=['#FF4B4B'], template="plotly_dark")
+                    fig_hour = px.histogram(fraud_df, x="hour", nbins=24, title="Peak Fraud Hours", color_discrete_sequence=['#FF4B4B'])
                     fig_hour.update_layout(bargap=0.1, paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                     st.plotly_chart(fig_hour, use_container_width=True)
             
-            st.markdown("**Geographical Fraud Distribution**")
+            st.markdown("*Geographical Fraud Distribution*")
             if 'location' in fraud_df.columns:
                 fraud_by_loc = fraud_df['location'].value_counts().reset_index()
                 fraud_by_loc.columns = ['Location', 'Count']
-                fig_loc = px.bar(fraud_by_loc, x='Count', y='Location', orientation='h', color='Count', color_continuous_scale='Oranges', template="plotly_dark")
+                fig_loc = px.bar(fraud_by_loc, x='Count', y='Location', orientation='h', color='Count', color_continuous_scale='Oranges')
                 fig_loc.update_layout(paper_bgcolor="rgba(0,0,0,0)", plot_bgcolor="rgba(0,0,0,0)")
                 st.plotly_chart(fig_loc, use_container_width=True)
 
@@ -251,9 +192,10 @@ if selected == "Dashboard":
 # 6. Real-Time Prediction Section
 # ---------------------------------------------------------
 elif selected == "Real-Time Prediction":
-    st.title("🛡️ Transaction Scanner")
+    st.title("🛡 Transaction Scanner")
     st.markdown("Enter transaction details below to estimate fraud probability.")
 
+    # Mappings definition
     Transaction_Type_dict = {'ATM Withdrawal': 0, 'Bank Transfer': 1, 'Online': 2, 'POS': 3}
     Device_Type_dict = {'Laptop': 0, 'Mobile': 1, 'Tablet': 2}
     Location_dict = {'London': 0, 'Mumbai': 1, 'New York': 2, 'Sydney': 3, 'Tokyo': 4}
@@ -351,19 +293,19 @@ elif selected == "Real-Time Prediction":
         if probability > 0.5:
             risk_level = "CRITICAL RISK"
             risk_color = "#FF4B4B"
-            risk_icon = "🛡️❌"
+            risk_icon = "🛡❌"
             risk_message = "Transaction Blocked - High Fraud Probability"
             bar_width = "100%"
         elif probability > 0.3:
             risk_level = "WARNING"
             risk_color = "#FFA500"
-            risk_icon = "⚠️"
+            risk_icon = "⚠"
             risk_message = "Manual Review Required"
             bar_width = "60%"
         else:
             risk_level = "SAFE"
-            risk_color = "#2EA043"
-            risk_icon = "🛡️✅"
+            risk_color = "#00CC96"
+            risk_icon = "🛡✅"
             risk_message = "Transaction Verified Successfully"
             bar_width = "5%"
             
@@ -372,17 +314,16 @@ elif selected == "Real-Time Prediction":
         st.markdown(f"""
 <style>
 .security-card {{
-    background-color: #161B22;
-    border: 1px solid #30363D;
+    background-color: var(--secondary-background-color);
     border-radius: 15px;
     padding: 30px;
     text-align: center;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+    box-shadow: 0 4px 15px rgba(0,0,0,0.1);
     border-top: 8px solid {risk_color};
-    font-family: 'Segoe UI', sans-serif;
+    font-family: sans-serif;
 }}
 .risk-label {{
-    color: #8B949E;
+    color: #888;
     font-size: 14px;
     text-transform: uppercase;
     letter-spacing: 2px;
@@ -394,14 +335,12 @@ elif selected == "Real-Time Prediction":
     font-size: 36px;
     font-weight: 900;
     margin: 15px 0;
-    text-shadow: 0 0 10px rgba({int(risk_color[1:3], 16)}, {int(risk_color[3:5], 16)}, {int(risk_color[5:7], 16)}, 0.3);
 }}
 .icon-display {{
     font-size: 70px;
-    margin-bottom: 10px;
 }}
 .risk-bar-bg {{
-    background-color: #30363D;
+    background-color: #e0e0e0;
     border-radius: 10px;
     height: 12px;
     width: 100%;
@@ -413,13 +352,12 @@ elif selected == "Real-Time Prediction":
     height: 100%;
     width: {bar_width};
     transition: width 1s ease-in-out;
-    box-shadow: 0 0 10px {risk_color};
 }}
 .labels-row {{
     display: flex; 
     justify-content: space-between; 
     font-size: 12px; 
-    color: #8B949E; 
+    color: #999; 
     margin-top: 25px;
 }}
 </style>
@@ -428,7 +366,7 @@ elif selected == "Real-Time Prediction":
 <div class="risk-label">Analysis Result</div>
 <div class="icon-display">{risk_icon}</div>
 <div class="main-status">{risk_level}</div>
-<p style="color: #E6EDF3; font-size: 18px;">{risk_message}</p>
+<p style="color: var(--text-color); font-size: 18px;">{risk_message}</p>
 
 <div class="labels-row">
 <span>Safe</span>
